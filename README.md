@@ -1,4 +1,4 @@
-# OCI Designer Toolkit [0.5.0](CHANGELOG.md#version-0.5.0)
+# OCI Designer Toolkit [0.6.0](CHANGELOG.md#version-0.6.0)
 
 OCI designer toolKIT (OKIT) is a set of tools for enabling design, deploy and visualise OCI environments 
 through a graphical web based interface. 
@@ -28,18 +28,28 @@ web interface, to provide a portable generic, json, file that can be used to vis
 Detailed OKIT Installation steps can be found in the [OCI Designer Toolkit Installation Guide](documentation/Installation.md).
 
 ### Quick Start
-The docker image is the recommended runtime server and can be built and started using the scripts in the docker sub directory
+The docker image is the recommended runtime server and can be built and started using the following simple docker commands.
 
 #### Build Docker Image
 ```bash
-cd docker/
-./build-docker-image.sh
+cd oci-designer-toolkit
+docker build --tag okit --file ./containers/docker/Dockerfile --force-rm ./containers/docker/
 ```
 
 #### Start Docker Image
+- OKIT_ROOT_DIR  : Absolute directory name for the extracted / cloned OKIT repository
+- OCI_CONFIG_DIR : Directory containing the OCI config file. Details can be found in [OCI Designer Toolkit Installation Guide](documentation/Installation.md#oci-config-file).
+
 ```bash
-cd docker/
-./start-okit-server.sh
+cd oci-designer-toolkit
+docker run -d --rm -p 80:80 \
+           --name okit \
+           --hostname okit \
+           -v <OCI_CONFIG_DIR>:/root/.oci \
+           -v <OKIT_ROOT_DIR>/okitweb:/okit/okitweb \
+           -v <OKIT_ROOT_DIR>/visualiser:/okit/visualiser \
+           -v <OKIT_ROOT_DIR>/log:/okit/log \
+           okit
 ```
 
 Once started the Designer BUI can be accessed on [http://localhost/okit/designer](http://localhost/okit/designer)
