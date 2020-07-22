@@ -29,7 +29,7 @@ class Instance extends OkitArtifact {
         this.agent_config = {is_monitoring_disabled: false, is_management_disabled: false};
         this.vnics = [];
         this.source_details = {os: 'Oracle Linux', version: '7.7', boot_volume_size_in_gbs: '50', source_type: 'image'};
-        this.metadata = {authorized_keys: '', user_data: ''};
+        this.metadata = {ssh_authorized_keys: '', user_data: ''};
         // TODO: Future
         //this.launch_options_specified = false;
         //this.launch_options = {boot_volume_type: '', firmware: '', is_consistent_volume_naming_enabled: false, is_pv_encryption_in_transit_enabled: false, network_type: '', remote_data_volume_type: ''};
@@ -72,7 +72,8 @@ class Instance extends OkitArtifact {
         // Move Metadata elements
         if (this.metadata === undefined) {this.metadata = {};}
         if (this.cloud_init_yaml !== undefined) {this.metadata.user_data = String(this.cloud_init_yaml); delete this.cloud_init_yaml;}
-        if (this.authorized_keys !== undefined) {this.metadata.authorized_keys = this.authorized_keys; delete this.authorized_keys;}
+        if (this.authorized_keys !== undefined) {this.metadata.ssh_authorized_keys = this.authorized_keys; delete this.authorized_keys;}
+        if (this.metadata.authorized_keys !== undefined) {this.metadata.ssh_authorized_keys = this.metadata.authorized_keys; delete this.metadata.authorized_keys;}
         // Move Source Details elements
         if (this.source_details === undefined) {this.source_details = {};}
         if (this.os !== undefined) {this.source_details.os = this.os; delete this.os;}
@@ -287,22 +288,38 @@ class Instance extends OkitArtifact {
             // Build Instance Shape Select
             let shape_select = $(jqId('shape'));
             $(shape_select).empty();
-            for (let shape of okitOciData.shapes) {
-                if (!shape.shape.startsWith('BM.')) {
-                    let shape_text = `${shape.shape} (${shape.ocpus} OCPU ${shape.memory_in_gbs} GB Memory)`;
-                    // Simple Shape Text because we need to upgrade the oci module
-                    shape_text = `${shape.shape}`;
-                    shape_select.append($('<option>').attr('value', shape.shape).text(shape_text));
-                }
+            for (let shape of okitOciData.getInstanceShapes()) {
+                let shape_text = `${shape.shape} (${shape.ocpus} OCPU ${shape.memory_in_gbs} GB Memory)`;
+                // Simple Shape Text because we need to upgrade the oci module
+                shape_text = `${shape.shape}`;
+                shape_select.append($('<option>').attr('value', shape.shape).text(shape_text));
             }
             // Build Network Security Groups
             this.loadNetworkSecurityGroups('nsg_ids', this.primary_vnic.subnet_id);
             // Secondary Vnics
             this.loadSecondaryVnics();
             $(jqId('add_vnic')).on('click', () => {this.addSecondaryVnic();});
+            // Load OSs
+            let os_select = $(jqId('os'));
+            $(os_select).empty();
+            for (let os of okitOciData.getInstanceOS()) {
+                os_select.append($('<option>').attr('value', os).text(os));
+            }
+            os_select.on('change', () => {me.loadOSVersions($("#os").val());});
+            // Load OS Versions
+            this.loadOSVersions(this.source_details.os);
             // Load Properties
             loadPropertiesSheet(this);
         });
+    }
+
+    loadOSVersions(os) {
+        let version_select = $(jqId('version'));
+        $(version_select).empty();
+        for (let version of okitOciData.getInstanceOSVersions(os)) {
+            version_select.append($('<option>').attr('value', version).text(version));
+        }
+        $("#version").val($("#version option:first").val());
     }
 
     loadNetworkSecurityGroups(select_id, subnet_id) {
