@@ -30,9 +30,16 @@ class OCIImages(OCIComputeConnection):
         self.images_obj = []
         super(OCIImages, self).__init__(config=config, configfile=configfile, profile=profile)
 
+    def get(self, image_id):
+        image = self.client.get_image(image_id).data
+        logger.info('Images : ' + str(image))
+        image_json = self.toJson(image)
+        logger.info(str(image_json))
+        return image_json
+
     def list(self, compartment_id=None, filter=None):
         if compartment_id is None and self.compartment_id is None:
-            compartment_id = self.config['tenancy']
+            compartment_id = self.getTenancy()
         elif compartment_id is None:
             compartment_id = self.compartment_id
 
@@ -57,7 +64,7 @@ class OCIImages(OCIComputeConnection):
                 seen.append(image['sort_key'])
         logger.debug('============================== Images De-Duplicate ==============================')
         logJson(deduplicated)
-        images_json = deduplicated
+        #images_json = deduplicated
         # Add Shape Compatibility
         # TODO: Upgade oci sdk
         #shape_capabilities = OCIImageShapeCompatibility()
@@ -78,10 +85,6 @@ class OCIImageShapeCompatibility(OCIComputeConnection):
         super(OCIImageShapeCompatibility, self).__init__(config=config, configfile=configfile, profile=profile)
 
     def list(self, image_id=None, filter=None):
-        if image_id is None and self.image_id is None:
-            image_id = self.config['tenancy']
-        elif image_id is None:
-            image_id = self.image_id
 
         # Add filter
         if filter is None:

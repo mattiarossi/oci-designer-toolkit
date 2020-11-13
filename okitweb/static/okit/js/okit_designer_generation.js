@@ -23,11 +23,12 @@ function saveZip(url, filename="") {
 
 function handleGenerateTerraform(e) {
     hideNavMenu();
-    okitJson.validate(generateTerraform);
+    okitJsonModel.validate(generateTerraform);
 }
 function generateTerraform(results) {
     if (results.valid) {
-        let requestJson = JSON.parse(JSON.stringify(okitJson));
+        let requestJson = JSON.parse(JSON.stringify(okitJsonModel));
+        console.info(okitSettings);
         requestJson.use_variables = okitSettings.is_variables;
         $.ajax({
             type: 'post',
@@ -37,7 +38,6 @@ function generateTerraform(results) {
             data: JSON.stringify(requestJson),
             success: function(resp) {
                 console.info('Response : ' + resp);
-                //window.location = 'generate/terraform';
                 saveZip('generate/terraform');
             },
             error: function(xhr, status, error) {
@@ -52,11 +52,11 @@ function generateTerraform(results) {
 
 function handleGenerateAnsible(e) {
     hideNavMenu();
-    okitJson.validate(generateAnsible);
+    okitJsonModel.validate(generateAnsible);
 }
 function generateAnsible(results) {
     if (results.valid) {
-        let requestJson = JSON.parse(JSON.stringify(okitJson));
+        let requestJson = JSON.parse(JSON.stringify(okitJsonModel));
         requestJson.use_variables = okitSettings.is_variables;
         $.ajax({
             type: 'post',
@@ -99,7 +99,7 @@ function handleGenerateTerraform11(e) {
 
 function handleExportToResourceManager(e) {
     hideNavMenu();
-    okitJson.validate(generateResourceManager);
+    okitJsonModel.validate(generateResourceManager);
 }
 function generateResourceManager(results) {
     if (results.valid) {
@@ -148,6 +148,10 @@ function displayResourceManagerDialog() {
         .attr('id', 'config_profile')
         .on('change', () => {
             console.info('Profile Select '+$(jqId('config_profile')).val());
+            okitSettings.profile = $(jqId('config_profile')).val();
+            okitSettings.save();
+            // Clear Existing Compartments
+            okitOciData.setCompartments([]);
             loadCompartments();
             loadRegions();
         });
@@ -300,7 +304,7 @@ function displayResourceManagerDialog() {
     $(jqId('modal_dialog_wrapper')).removeClass('hidden');
 }
 function exportToResourceManager() {
-    let request_json = JSON.clone(okitJson);
+    let request_json = JSON.clone(okitJsonModel);
     request_json.location = {
         config_profile: $(jqId('config_profile')).val(),
         compartment_id: $(jqId('query_compartment_id')).val(),
@@ -373,4 +377,32 @@ function loadResourceManagerStacks() {
     });
 }
 
+function handleExportToResourceManagerGitLab(e) {
+    hideNavMenu();
+    okitJsonModel.validate(generateResourceManagerGitLab);
+}
+function generateResourceManagerGitLab(results) {
+    if (results.valid) {
+        let requestJson = JSON.parse(JSON.stringify(okitJsonModel));
+        console.info(okitSettings);
+        requestJson.use_variables = okitSettings.is_variables;
+        $.ajax({
+            type: 'post',
+            url: 'generate/resource-manager',
+            dataType: 'text',
+            contentType: 'application/json',
+            data: JSON.stringify(requestJson),
+            success: function(resp) {
+                console.info('Response : ' + resp);
+                saveZip('generate/resource-manager');
+            },
+            error: function(xhr, status, error) {
+                console.info('Status : '+ status)
+                console.info('Error : '+ error)
+            }
+        });
+    } else {
+        validationFailedNotification();
+    }
+}
 

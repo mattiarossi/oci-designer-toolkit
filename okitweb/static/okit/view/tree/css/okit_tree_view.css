@@ -56,8 +56,24 @@ rect.okit-explorer-view-highlight {
     white-space: nowrap;
 }
 
+.collapsible-view-element > div::before {
+    content: "-";
+    color: #336600;
+    display: inline-block;
+}
+
+.simple-view-element > div::before {
+    content: "├";
+    color: #336600;
+    display: inline-block;
+}
+
 .autonomous-database-tree-view > div {
     background-image: url("/static/okit/palette/database/Autonomous_Database.svg");
+}
+
+.availability-domain-tree-view > div {
+    background-image: url("/static/okit/palette/hidden/Availability_Domain.svg");
 }
 
 .block-storage-tree-view > div {
@@ -68,7 +84,7 @@ rect.okit-explorer-view-highlight {
     background-image: url("/static/okit/palette/containers/Compartment.svg");
 }
 
-.compartment-tree-view > div::before {
+.compartment-tree-view1 > div::before {
     content: "-";
     color: #336600;
     display: inline-block;
@@ -83,7 +99,7 @@ rect.okit-explorer-view-highlight {
 }
 
 .fast-connect-tree-view > div {
-    background-image: url("/static/okit/palette/networking/Fast_Connect.svg");
+    background-image: url("/static/okit/palette/hidden/Fast_Connect.svg");
 }
 
 .file-storage-tree-view > div {
@@ -134,7 +150,7 @@ rect.okit-explorer-view-highlight {
     background-image: url("/static/okit/palette/networking/Subnet.svg");
 }
 
-.subnet-tree-view > div::before {
+.subnet-tree-view1 > div::before {
     content: "-";
     color: #336600;
     display: inline-block;
@@ -144,7 +160,7 @@ rect.okit-explorer-view-highlight {
     background-image: url("/static/okit/palette/networking/Virtual_Cloud_Network.svg");
 }
 
-.vcn-tree-view > div::before {
+.vcn-tree-view1 > div::before {
     content: "-";
     color: #336600;
     display: inline-block;

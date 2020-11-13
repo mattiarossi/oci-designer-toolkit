@@ -4,7 +4,6 @@
 */
 console.info('Loaded OKIT Designer View Javascript');
 
-// TODO: Implement View Classes
 class OkitDesignerJsonView extends OkitJsonView {
     // Define Constants
     static get CANVAS_SVG() {return 'canvas-svg'}
@@ -16,105 +15,131 @@ class OkitDesignerJsonView extends OkitJsonView {
         this.palette_svg = palette_svg;
     }
 
+    static newView(model, parent_id, display_grid = false, palette = []) {
+        return new OkitDesignerJsonView((model, parent_id, display_grid, palette))
+    }
+
     draw() {
-        console.groupCollapsed('Drawing SVG Canvas');
+        console.log('Drawing Designer Canvas');
+        console.info(this);
         // Display Json
         this.displayOkitJson();
         // New canvas
         let width = 0;
         let height = 0;
-        for (let compartment of this.getOkitJson().compartments) {
-            let dimensions = this.newCompartment(compartment).dimensions;
+        for (let compartment of this.compartments) {
+            console.info(`Processing ${compartment.artefact.display_name}`);
+            let dimensions = compartment.dimensions;
             width = Math.max(width, dimensions.width);
             height = Math.max(height, dimensions.height);
         }
-        let canvas_svg = this.newCanvas(this.parent_id, width, height);
+        let canvas_svg = this.newCanvas(width, height);
 
         // Draw Compartments
         for (let compartment of this.compartments) {
-            this.newCompartment(compartment).draw();
+            compartment.draw();
         }
 
         // Draw Compartment Sub Components
         // Virtual Cloud Networks
         for (let virtual_cloud_network of this.virtual_cloud_networks) {
-            this.newVirtualCloudNetwork(virtual_cloud_network).draw();
+            virtual_cloud_network.draw();
         }
         // Block Storage Volumes
         for (let block_storage_volume of this.block_storage_volumes) {
-            this.newBlockStorageVolume(block_storage_volume).draw();
+            block_storage_volume.draw();
         }
         // Object Storage Buckets
         for (let object_storage_bucket of this.object_storage_buckets) {
-            this.newObjectStorageBucket(object_storage_bucket).draw();
+            object_storage_bucket.draw();
         }
-        // Autonomous Databases
-        for (let autonomous_database of this.autonomous_databases) {
-            this.newAutonomousDatabase(autonomous_database).draw();
+        // Customer Premise Equipment
+        for (let customer_premise_equipment of this.customer_premise_equipments) {
+            customer_premise_equipment.draw();
         }
         // FastConnects
         for (let fast_connect of this.fast_connects) {
-            this.newFastConnect(fast_connect).draw();
+            fast_connect.draw();
+        }
+        // IPSec Connections
+        for (let ipsec_connection of this.ipsec_connections) {
+            ipsec_connection.draw();
+        }
+        // Remote Peering Connections
+        for (let remote_peering_connection of this.remote_peering_connections) {
+            remote_peering_connection.draw();
         }
 
         // Draw Virtual Cloud Network Sub Components
         // Internet Gateways
         for (let internet_gateway of this.internet_gateways) {
-            this.newInternetGateway(internet_gateway).draw();
+            internet_gateway.draw();
         }
         // NAT Gateways
         for (let nat_gateway of this.nat_gateways) {
-            this.newNATGateway(nat_gateway).draw();
+            nat_gateway.draw();
         }
         // Service Gateways
         for (let service_gateway of this.service_gateways) {
-            this.newServiceGateway(service_gateway).draw();
+            service_gateway.draw();
         }
         // Dynamic Routing Gateways
         for (let dynamic_routing_gateway of this.dynamic_routing_gateways) {
-            this.newDynamicRoutingGateway(dynamic_routing_gateway).draw();
+            dynamic_routing_gateway.draw();
         }
         // Local Peering Gateways
         for (let local_peering_gateway of this.local_peering_gateways) {
-            this.newLocalPeeringGateway(local_peering_gateway).draw();
+            local_peering_gateway.draw();
         }
         // Route Tables
         for (let route_table of this.route_tables) {
-            this.newRouteTable(route_table).draw();
+            route_table.draw();
         }
         // Security Lists
         for (let security_list of this.security_lists) {
-            this.newSecurityList(security_list).draw();
+            security_list.draw();
         }
         // Network Security Groups
         for (let network_security_group of this.network_security_groups) {
-            this.newNetworkSecurityGroup(network_security_group).draw();
+            network_security_group.draw();
         }
         // Subnets
         for (let subnet of this.subnets) {
-            this.newSubnet(subnet).draw();
+            subnet.draw();
+        }
+        // OKE Clusters
+        for (let oke_cluster of this.oke_clusters) {
+            oke_cluster.draw();
         }
 
         // Draw Subnet Sub Components
         // Database System
         for (let database_system of this.database_systems) {
-            this.newDatabaseSystem(database_system).draw();
+            database_system.draw();
         }
         // File Storage System
         for (let file_storage_system of this.file_storage_systems) {
-            this.newFileStorageSystem(file_storage_system).draw();
-        }
-        // Containers
-        for (let container of this.containers) {
-            this.newContainer(container).draw();
+            file_storage_system.draw();
         }
         // Instances
         for (let instance of this.instances) {
-            this.newInstance(instance).draw();
+            instance.draw();
+        }
+        // Instance Pools
+        for (let instance_pool of this.instance_pools) {
+            instance_pool.draw();
         }
         // Load Balancers
         for (let load_balancer of this.load_balancers) {
-            this.newLoadBalancer(load_balancer).draw();
+            load_balancer.draw();
+        }
+        // Autonomous Databases
+        for (let autonomous_database of this.autonomous_databases) {
+            autonomous_database.draw();
+        }
+        // MySQL Database System
+        for (let mysql_database_system of this.mysql_database_systems) {
+            mysql_database_system.draw();
         }
 
         // Resize Main Canvas if required
@@ -138,13 +163,95 @@ class OkitDesignerJsonView extends OkitJsonView {
         }
 
         console.info(this);
+        // Draw Connection
+        this.drawConnections();
+        console.log();
+    }
 
-        console.groupEnd();
+    drawConnections() {
+        // IPSec Connections
+        for (let ipsec_connection of this.ipsec_connections) {
+            ipsec_connection.drawConnections();
+        }
+        // Remote Peering Connections
+        for (let remote_peering_connection of this.remote_peering_connections) {
+            remote_peering_connection.drawConnections();
+        }
+        // Fast Connects
+        for (let fast_connect of this.fast_connects) {
+            fast_connect.drawConnections();
+        }
+        // Load Balancers
+        for (let load_balancer of this.load_balancers) {
+            load_balancer.drawConnections();
+        }
+        // Local Peering Connections
+        for (let local_peering_gateway of this.local_peering_gateways) {
+            local_peering_gateway.drawConnections();
+        }
+    }
+
+    /*
+    ** Draw Functions for each specific Artefact
+     */
+    drawRootCompartment() {
+        this.drawCompartments(null);
+    }
+    drawCompartments(parent_id) {
+        for (let compartment of this.compartments) {
+            if (compartment.compartment_id === parent_id) {
+                compartment.draw();
+                // Draw Sub Compartments
+            }
+        }
     }
 
     displayOkitJson() {}
 
-    newCanvas() {}
+    newCanvas(width=400, height=300) {
+        console.log('New Canvas');
+        console.info('Parent                : ' + this.parent_id);
+        console.info('Width                 : ' + width);
+        console.info('Height                : ' + height);
+        let canvas_div = d3.select(d3Id(this.parent_id));
+        let parent_width  = $(jqId(this.parent_id)).width();
+        let parent_height = $(jqId(this.parent_id)).height();
+        width  = Math.round(Math.max(width, parent_width));
+        height = Math.round(Math.max(height, parent_height));
+        console.info('Width                 : ' + width);
+        console.info('Height                : ' + height);
+        // Round up to next grid size to display full grid.
+        if (okitSettings.is_display_grid) {
+            width += (grid_size - (width % grid_size) + 1);
+            height += (grid_size - (height % grid_size) + 1);
+        }
+        console.info('Default Canvas Width  : ' + default_canvas_width);
+        console.info('Default Canvas Height : ' + default_canvas_height);
+        console.info('JQuery Parent Width   : ' + $(jqId(this.parent_id)).width());
+        console.info('JQuery Parent Height  : ' + $(jqId(this.parent_id)).height());
+        console.info('Client Parent Width   : ' + document.getElementById(this.parent_id).clientWidth);
+        console.info('Client Parent Height  : ' + document.getElementById(this.parent_id).clientHeight);
+        console.info('Window Width          : ' + $(window).width());
+        console.info('Window Height         : ' + $(window).height());
+        console.info('Canvas Width          : ' + width);
+        console.info('Canvas Height         : ' + height);
+        // Empty existing Canvas
+        canvas_div.selectAll('*').remove();
+        // Wrapper SVG Element to define ViewBox etc
+        let canvas_svg = canvas_div.append("svg")
+            .attr("id", 'canvas-svg')
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", width)
+            .attr("height", height)
+            .attr("viewBox", "0 0 " + width + " " + height)
+            .attr("preserveAspectRatio", "xMinYMin meet");
+
+        this.clearCanvas();
+        console.log();
+
+        return canvas_svg;
+    }
 
     clearCanvas() {
         let canvas_svg = d3.select(d3Id(OkitDesignerJsonView.CANVAS_SVG));
@@ -240,8 +347,60 @@ class OkitDesignerJsonView extends OkitJsonView {
 }
 
 class OkitDesignerArtefactView extends OkitArtefactView {
-    constructor(artefact=null) {
-        super(artefact);
+    constructor(artefact=null, json_view) {
+        super(artefact, json_view);
+    }
+
+    loadCustomerPremiseEquipments(select_id) {
+        $(jqId(select_id)).empty();
+        const cpe_select = $(jqId(select_id));
+        cpe_select.append($('<option>').attr('value', '').text(''));
+        for (const cpe of this.getOkitJson().getCustomerPremiseEquipments()) {
+            cpe_select.append($('<option>').attr('value', cpe.id).text(cpe.display_name));
+        }
+    }
+
+    loadDynamicRoutingGateways(select_id) {
+        $(jqId(select_id)).empty();
+        const drg_select = $(jqId(select_id));
+        drg_select.append($('<option>').attr('value', '').text(''));
+        for (const drg of this.getOkitJson().getDynamicRoutingGateways()) {
+            drg_select.append($('<option>').attr('value', drg.id).text(drg.display_name));
+        }
+    }
+
+    loadNetworkSecurityGroups(select_id, subnet_id) {
+        $(jqId(select_id)).empty();
+        let multi_select = d3.select(d3Id(select_id));
+        if (subnet_id && subnet_id !== '') {
+            let vcn = this.getOkitJson().getVirtualCloudNetwork(this.getOkitJson().getSubnet(subnet_id).vcn_id);
+            for (let networkSecurityGroup of this.getOkitJson().network_security_groups) {
+                if (networkSecurityGroup.vcn_id === vcn.id) {
+                    let div = multi_select.append('div');
+                    div.append('input')
+                        .attr('type', 'checkbox')
+                        .attr('id', safeId(networkSecurityGroup.id))
+                        .attr('value', networkSecurityGroup.id);
+                    div.append('label')
+                        .attr('for', safeId(networkSecurityGroup.id))
+                        .text(networkSecurityGroup.display_name);
+                }
+            }
+        }
+    }
+
+    loadLoadBalancerShapes(select_id) {
+        $(jqId(select_id)).empty();
+        const lb_select = $(jqId(select_id));
+        for (let shape of okitOciData.getLoadBalaancerShapes()) {
+            lb_select.append($('<option>').attr('value', shape.name).text(shape.name));
+        }
+    }
+}
+
+class OkitContainerDesignerArtefactView extends OkitContainerArtefactView {
+    constructor(artefact=null, json_view) {
+        super(artefact, json_view);
     }
 }
 

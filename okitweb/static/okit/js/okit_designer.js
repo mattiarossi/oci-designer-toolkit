@@ -10,7 +10,9 @@ console.info('Loaded Designer Javascript');
 const ROOT_CANVAS_ID = 'canvas';
 const PROPERTIES_PANEL = 'properties_panel';
 const SETTINGS_PANEL = 'settings_panel';
-const JSON_PANEL = 'json_panel';
+const JSON_MODEL_PANEL = 'json_model_panel';
+const JSON_VIEW_PANEL = 'json_view_panel';
+const JSON_REGION_PANEL = 'json_region_panel';
 const VALUE_PROPOSITION_PANEL = 'value_proposition_panel';
 const COST_ESTIMATE_PANEL = 'cost_estimate_panel';
 const VALIDATION_PANEL = 'validation_panel';
@@ -30,12 +32,14 @@ let right_drag_bar_start_x = 0;
 let ociRegions = [];
 
 function resetDesigner() {
-    okitJson = new OkitJson();
+    newModel();
+    newDesignerView();
     regionOkitJson = {};
     clearRegionTabBar();
     hideRegionTabBar();
     $(jqId(PROPERTIES_PANEL)).load('propertysheets/empty.html');
     displayOkitJson();
+    $(jqId('file-save-regional-menu-item-li')).addClass('hidden');
 }
 /*
 ** Set OCI Link
@@ -76,18 +80,45 @@ function handleNew(evt) {
     redrawSVGCanvas();
 }
 function newDiagram() {
-    console.groupCollapsed('Creating New Diagram');
-    okitJson = new OkitJson();
-    newCanvas();
-    okitJson.newCompartment();
-    console.groupEnd();
+    console.log('Creating New Diagram');
+    newModel();
+    newDesignerView();
+    okitJsonView.newCanvas();
+    okitJsonView.newCompartment();
+    console.info(okitJsonView);
+    console.log();
 }
+function newDesignerView() {
+    okitJsonView = new OkitDesignerJsonView(okitJsonModel, 'canvas-div', okitSettings.is_display_grid, palette_svg);
+}
+function newModel() {
+    okitJsonModel = new OkitJson();
+}
+function newRegionsModel() {
+    regionOkitJson = new OkitRegions();
+}
+function setTitleDescription() {
+    $('#title').val(okitJsonModel.title);
+    $('#description').val(okitJsonModel.description);
+}
+function updateJsonTitle() {
+    okitJsonModel.title = $('#title').val();
+}
+function updateJsonDescription() {
+    okitJsonModel.description = $('#description').val();
+}
+
 /*
 ** Load Existing Json
  */
 function handleLoad(evt) {
     hideNavMenu();
     resetDesigner();
+    /*
+    ** Add Load File Handling
+     */
+    $('#files').off('change').on('change', handleFileSelect);
+    // Click Files Element
     let fileinput = document.getElementById("files");
     fileinput.click();
 }
@@ -104,15 +135,17 @@ function getAsJson(readFile) {
 function loaded(evt) {
     // Clear Existing Region
     regionOkitJson = {};
-    okitJson = null
+    okitJsonModel = null
     hideRegionTabBar();
     clearRegionTabBar();
     // Obtain the read file data
     let fileString = evt.target.result;
     let fileJson = JSON.parse(fileString);
+    console.info(fileJson);
     if (fileJson.hasOwnProperty('compartments')) {
         console.info('>> Single Region File')
-        okitJson = new OkitJson(fileString);
+        okitJsonModel = new OkitJson(fileString);
+        newDesignerView();
     } else {
         console.info('>> Multi Region File.')
         showRegionTabBar();
@@ -120,14 +153,15 @@ function loaded(evt) {
             console.info('>>>> Add Tab For ' + region);
             addRegionTab(region);
             regionOkitJson[region] = new OkitJson(JSON.stringify(fileJson[region]));
-            if (okitJson === null) {
-                okitJson = regionOkitJson[region];
+            if (okitJsonModel === null) {
+                okitJsonModel = regionOkitJson[region];
+                newDesignerView();
                 $(jqId(regionTabName(region))).trigger("click");
             }
         }
     }
     displayOkitJson();
-    okitJson.draw();
+    displayDesignerView();
     displayTreeView();
 }
 function errorHandler(evt) {
@@ -142,13 +176,17 @@ function handleSave(evt) {
     if (okitSettings.is_timestamp_files) {
         filename = 'okit-' + getTimestamp() + '.json'
     }
-    if (Object.keys(regionOkitJson).length > 0) {
-        console.info('>> Saving Multi Region File');
-        saveJson(JSON.stringify(regionOkitJson, null, 2), filename);
-    } else {
-        console.info('>> Saving Single Region File');
-        saveJson(JSON.stringify(okitJson, null, 2), filename);
+    console.info('>> Saving Single Region File');
+    saveJson(JSON.stringify(okitJsonModel, null, 2), filename);
+}
+function handleSaveRegional(evt) {
+    hideNavMenu();
+    let filename = "okit-regional.json";
+    if (okitSettings.is_timestamp_files) {
+        filename = 'okit-regional-' + getTimestamp() + '.json'
     }
+    console.info('>> Saving Multi Region File');
+    saveJson(JSON.stringify(regionOkitJson, null, 2), filename);
 }
 function saveJson(text, filename){
     let uri = 'data:text/plain;charset=utf-u,'+encodeURIComponent(text);
@@ -166,6 +204,7 @@ function handleSaveAs(evt) {
         .attr('id', 'save_as_template_table')
         .attr('class', 'table okit-table okit-modal-dialog-table');
     let tbody = table.append('div').attr('class', 'tbody');
+    // Title
     let tr = tbody.append('div').attr('class', 'tr');
     tr.append('div').attr('class', 'td').text('Title');
     tr.append('div').attr('class', 'td').append('input')
@@ -173,6 +212,7 @@ function handleSaveAs(evt) {
         .attr('id', 'template_title')
         .attr('name', 'template_title')
         .attr('type', 'text');
+    // Description
     tr = tbody.append('div').attr('class', 'tr');
     tr.append('div').attr('class', 'td').text('Description');
     tr.append('div').attr('class', 'td').append('input')
@@ -180,6 +220,8 @@ function handleSaveAs(evt) {
         .attr('id', 'template_description')
         .attr('name', 'template_description')
         .attr('type', 'text');
+    // Type
+    /* TODO: Reinstate when sub template types are implemented
     tr = tbody.append('div').attr('class', 'tr');
     tr.append('div').attr('class', 'td').text('Type');
     tr.append('div').attr('class', 'td').append('input')
@@ -187,6 +229,8 @@ function handleSaveAs(evt) {
         .attr('id', 'template_type')
         .attr('name', 'template_type')
         .attr('type', 'text');
+    */
+    // Save
     let save_button = d3.select(d3Id('modal_dialog_footer')).append('div').append('button')
         .attr('id', 'save_as_button')
         .attr('type', 'button')
@@ -195,15 +239,16 @@ function handleSaveAs(evt) {
     $(jqId('modal_dialog_wrapper')).removeClass('hidden');
 }
 function handleSaveAsTemplate(e) {
-    okitJson.title = $(jqId('template_title')).val();
-    okitJson.description = $(jqId('template_description')).val();
-    okitJson.template_type = $(jqId('template_type')).val();
+    okitJsonModel.title = $(jqId('template_title')).val();
+    okitJsonModel.description = $(jqId('template_description')).val();
+    //okitJsonModel.template_type = $(jqId('template_type')).val();
+    okitJsonModel.template_type = 'User';
     $.ajax({
         type: 'post',
         url: 'saveas/template',
         dataType: 'text',
         contentType: 'application/json',
-        data: JSON.stringify(okitJson),
+        data: JSON.stringify(okitJsonModel),
         success: function(resp) {
             console.info('Response : ' + resp);
             // Hide modal dialog
@@ -228,8 +273,10 @@ function handleRedraw(evt) {
 function redrawSVGCanvas(region='') {
     console.info('>>>>>>>>> Redrawing Canvas (Region : ' + region +')');
     console.info('>>>>>>>>> Active Region            : ' + activeRegion);
+    console.info(okitJsonView);
     if (region === '' || region === activeRegion) {
-        okitJson.draw();
+        displayDesignerView();
+        displayOkitJson();
     }
 }
 /*
@@ -253,9 +300,10 @@ function loadTemplate(template_url) {
         dataType: 'text',
         contentType: 'application/json',
         success: function(resp) {
-            okitJson = new OkitJson(resp);
+            okitJsonModel = new OkitJson(resp);
+            newDesignerView();
             displayOkitJson();
-            okitJson.draw();
+            displayDesignerView();
             displayTreeView();
         },
         error: function(xhr, status, error) {
@@ -291,6 +339,10 @@ function displayQueryDialog() {
             .attr('id', 'config_profile')
             .on('change', () => {
                 console.info('Profile Select ' + $(jqId('config_profile')).val());
+                okitSettings.profile = $(jqId('config_profile')).val();
+                okitSettings.save();
+                // Clear Existing Compartments
+                okitOciData.setCompartments([]);
                 loadCompartments();
                 loadRegions();
             });
@@ -336,6 +388,18 @@ function displayQueryDialog() {
             .append('option')
                 .attr('value', 'Retrieving')
                 .text('Retrieving..........');
+    // Sub-Compartment
+    tr = tbody.append('div')
+        .attr('class', 'tr');
+    tr.append('div').attr('class', 'td').text('');
+    let td = tr.append('div').attr('class', 'td');
+    td.append('input')
+        .attr('id', 'include_sub_compartments')
+        .attr('name', 'include_sub_compartments')
+        .attr('type', 'checkbox');
+    td.append('label')
+        .attr('for', 'include_sub_compartments')
+        .text('Include Sub Compartments');
     // Submit Button
     let submit = d3.select(d3Id('modal_dialog_footer')).append('div').append('button')
         .attr('id', 'submit_query_btn')
@@ -359,6 +423,7 @@ function handleQueryOci(e) {
     okitSettings.home_region_key = '';
     okitSettings.home_region = '';
     ociRegions = [];
+    // Load Previous Profile
     $(jqId('config_profile')).val(okitSettings.profile);
     // Load Compartment Select
     loadCompartments();
@@ -369,37 +434,60 @@ function loadCompartments() {
     // Clear Select
     let select = $(jqId('query_compartment_id'));
     $(select).empty();
-    select.append($('<option>').attr('value', 'Retrieving').text('Retrieving..........'));
-    // Get Compartments
-    $.ajax({
-        type: 'get',
-        url: 'oci/compartment',
-        dataType: 'text',
-        contentType: 'application/json',
-        data: JSON.stringify({config_profile: $(jqId('config_profile')).val()}),
-        success: function(resp) {
-            //console.info('Response : ' + resp);
-            let jsonBody = JSON.parse(resp)
-            $(jqId('query_compartment_id')).empty();
-            let compartment_select = d3.select(d3Id('query_compartment_id'));
-            for(let compartment of jsonBody ){
-                //console.info(compartment['display_name']);
-                compartment_select.append('option')
-                    .attr('value', compartment['id'])
-                    .text(compartment['display_name']);
-                if (okitSettings.home_region_key === '') {
-                    okitSettings.home_region_key = compartment.home_region_key;
-                }
-            }
-            selectQueryLastUsedCompartment();
-        },
-        error: function(xhr, status, error) {
-            console.info('Status : '+ status)
-            console.info('Error : '+ error)
+    if (okitOciData.getCompartments().length > 0) {
+        let compartment_select = d3.select(d3Id('query_compartment_id'));
+        for (let compartment of okitOciData.getCompartments()) {
+            compartment_select.append('option')
+                .attr('value', compartment['id'])
+                .text(compartment['display_name']);
         }
-    });
+        selectQueryLastUsedCompartment();
+     } else {
+        select.append($('<option>').attr('value', 'Retrieving').text('Retrieving..........'));
+        // Get Compartments
+        $.ajax({
+            type: 'get',
+            url: 'oci/compartment',
+            dataType: 'text',
+            contentType: 'application/json',
+            data: JSON.stringify({config_profile: $(jqId('config_profile')).val()}),
+            success: function (resp) {
+                let jsonBody = JSON.parse(resp)
+                okitOciData.setCompartments(jsonBody);
+                $(jqId('query_compartment_id')).empty();
+                let compartment_select = d3.select(d3Id('query_compartment_id'));
+                for (let compartment of jsonBody) {
+                    //console.info(compartment['display_name']);
+                    compartment_select.append('option')
+                        .attr('value', compartment['id'])
+                        .text(compartment['display_name']);
+                    if (okitSettings.home_region_key === '') {
+                        okitSettings.home_region_key = compartment.home_region_key;
+                    }
+                }
+                selectQueryLastUsedCompartment();
+            },
+            error: function (xhr, status, error) {
+                console.info('Status : ' + status)
+                console.info('Error : ' + error)
+            }
+        });
+    }
 }
 function loadRegions() {
+    // Clear Select
+    let select = $(jqId('query_region_id'));
+    $(select).empty();
+    let region_select = d3.select(d3Id('query_region_id'));
+    for(let region of okitOciData.getRegions() ){
+        region_select.append('option')
+            .attr('value', region['name'])
+            .text(region['display_name']);
+    }
+    selectQueryLastUsedRegion();
+}
+// TODO: Delete
+function loadRegions1() {
     // Clear Select
     let select = $(jqId('query_region_id'));
     $(select).empty();
@@ -419,6 +507,7 @@ function loadRegions() {
             ociRegions = jsonBody;
             for(let region of jsonBody ){
                 //console.info(region['display_name']);
+                //console.info(region['name']);
                 region_select.append('option')
                     .attr('value', region['name'])
                     .text(region['display_name']);
@@ -455,45 +544,56 @@ function selectQueryLastUsedCompartment() {
 }
 let queryCount = 0;
 function showQueryResults() {
-    console.group('Generating Query Results');
+    console.log('Generating Query Results');
     let regions = $(jqId('query_region_id')).val();
-    okitQueryRequestJson = {};
-    okitQueryRequestJson.compartment_id = $(jqId('query_compartment_id')).val();
-    okitQueryRequestJson.config_profile = $(jqId('config_profile')).val();
-    okitQueryRequestJson.region = '';
+    let request = {};
+    request.compartment_id = $(jqId('query_compartment_id')).val();
+    request.config_profile = $(jqId('config_profile')).val();
+    request.sub_compartments = $(jqId('include_sub_compartments')).is(':checked');
+    request.region = '';
     clearRegionTabBar();
     showRegionTabBar();
-    okitJson = new OkitJson('', 'canvas-div');
-    newCanvas();
+    newModel();
+    newDesignerView();
+    okitJsonView.newCanvas();
     console.info('Regions Ids : ' + regions);
-    regionOkitJson = {};
+    newRegionsModel();
     if (regions.length > 0) {
-        queryCount = 0;
         $(jqId('modal_loading_wrapper')).removeClass('hidden');
-        for (let region of regions) {
-            console.info('Processing Selected Region : ' + region);
-            okitQueryRequestJson.region = region;
+        okitOCIQuery = new OkitOCIQuery(regions);
+        // Add Tabs
+        $(jqId('region_progress')).empty();
+        for (const [i, region] of regions.entries()) {
             addRegionTab(region);
-            regionOkitJson[region] = new OkitJson();
-            let request = JSON.clone(okitQueryRequestJson);
-            request.region = region;
-            Compartment.queryRoot(request, region);
+            addRegionTabProgress(region);
+            addRegionProgressCheckbox(region);
         }
+        $(jqId('file-save-regional-menu-item-li')).removeClass('hidden');
         $(jqId(regionTabName(regions[0]))).trigger("click");
+        okitOCIQuery.query(request, function(region) {
+            console.info('Complete ' + region);
+            okitJsonModel = regionOkitJson[region];
+            newDesignerView();
+            redrawSVGCanvas(region);
+            displayTreeView();
+            $(jqId('modal_loading_wrapper')).addClass('hidden');
+        }, function (region) {
+            $(jqId(regionCheckboxName(region))).prop('checked', true);
+            removeRegionTabProgress(region);
+        });
     } else {
         console.info('Region Not Selected.');
     }
     $(jqId('modal_dialog_wrapper')).addClass('hidden');
-    console.groupEnd();
-}
-// TODO: Delete
-function hideQueryProgressIfComplete() {
-    console.info(`>>>>>>>>>>>>> Query Count: ${queryCount}`);
+    console.log();
 }
 $(document).ajaxStop(function() {
     console.info('All Ajax Functions Stopped');
-    $(jqId('modal_loading_wrapper')).addClass('hidden');
-    displayTreeView();
+    //$(jqId('modal_loading_wrapper')).addClass('hidden');
+    console.info(okitJsonView);
+    console.info(okitJsonModel);
+    //displayTreeView();
+    console.info(okitOCIQuery);
 });
 /*
 ** Export the Model as various formats
@@ -503,11 +603,8 @@ $(document).ajaxStop(function() {
  */
 function handleExportToSVG(evt) {
     hideNavMenu();
-    if (!okitJson.hasOwnProperty('open_compartment_index')) {
-        okitJson['open_compartment_index'] = 0;
-    }
     let okitcanvas = document.getElementById("canvas-svg");
-    let name = okitJson.compartments[okitJson['open_compartment_index']]['name'];
+    let name = okitJsonModel.compartments[0]['name'];
     let filename = name + '.svg';
     if (okitSettings.is_timestamp_files) {
         filename = name + getTimestamp() + '.svg';
@@ -539,7 +636,7 @@ function handleExportToJPG(evt) {
     saveAsImage('jpeg');
 }
 function saveAsImage(type='jpeg') {
-    console.group("Saving As " + type);
+    console.log("Saving As " + type);
     let svg = d3.select(d3Id("canvas-svg")).node();
     let serializer = new XMLSerializer();
     let svgStr = serializer.serializeToString(svg);
@@ -569,7 +666,7 @@ function saveAsImage(type='jpeg') {
     }
 
     img.src = 'data:image/svg+xml;base64,' + window.btoa(svgStr);
-    console.groupEnd();
+    console.log();
 }
 /*
 ** Resource Manager
@@ -597,12 +694,31 @@ function addRegionTab(region) {
             $('#region_tab_bar > button').removeClass("okit-tab-active");
             $(jqId(regionTabName(region))).addClass("okit-tab-active");
             activeRegion = region;
-            okitJson = regionOkitJson[region];
+            okitJsonModel = regionOkitJson[region];
+            newDesignerView();
             redrawSVGCanvas(region);
         });
 }
+function addRegionTabProgress(region) {
+    $(jqId(regionTabName(region))).addClass('okit-tab-progress');
+}
+function removeRegionTabProgress(region) {
+    $(jqId(regionTabName(region))).removeClass('okit-tab-progress');
+}
 function regionTabName(region) {
     return region + '_tab';
+}
+function addRegionProgressCheckbox(region) {
+    let td = d3.select(d3Id('region_progress')).append('div').attr('class', 'tr')
+        .append('div').attr('class', 'td');
+    td.append('input')
+        .attr('id', regionCheckboxName(region))
+        .attr('type', 'checkbox');
+    td.append('label')
+        .text(region);
+}
+function regionCheckboxName(region) {
+    return region + '_checkbox';
 }
 
 /*
@@ -612,12 +728,16 @@ function regionTabName(region) {
 ** Json / Source Code
  */
 function displayOkitJson() {
-    console.info('>>> Region Count ' + Object.keys(regionOkitJson).length);
-    if (Object.keys(regionOkitJson).length > 0) {
-        $(jqId(JSON_PANEL)).html('<pre><code>' + JSON.stringify(regionOkitJson, null, 2) + '</code></pre>');
-    } else {
-        $(jqId(JSON_PANEL)).html('<pre><code>' + JSON.stringify(okitJson, null, 2) + '</code></pre>');
-    }
+    $(jqId(JSON_MODEL_PANEL)).html('<pre><code>' + JSON.stringify(okitJsonModel, null, 2) + '</code></pre>');
+    $(jqId(JSON_VIEW_PANEL)).html('<pre><code>' + JSON.stringify(okitJsonView, null, 2) + '</code></pre>');
+    $(jqId(JSON_REGION_PANEL)).html('<pre><code>' + JSON.stringify(regionOkitJson, null, 2) + '</code></pre>');
+}
+/*
+** Draw Canvas
+ */
+function displayDesignerView() {
+    okitJsonView.draw();
+    setTitleDescription();
 }
 /*
 ** Slidebar handlers
@@ -625,7 +745,7 @@ function displayOkitJson() {
 // Tree View
 function displayTreeView() {
     if ($('#toggle_explorer_button').hasClass('okit-bar-panel-displayed')) {
-        let okit_tree = new OkitJsonTreeView(okitJson, 'explorer_panel');
+        let okit_tree = new OkitJsonTreeView(okitJsonModel, 'explorer_panel');
         okit_tree.draw();
     }
 }
@@ -721,7 +841,7 @@ function displayValidationResults(results) {
             d3.select(d3Id(error.id)).attr('fill', fill);
         });
         tr.on('click', () => {
-            error_propeties.push(error.element);
+            error_properties.push(error.element);
             d3.select(d3Id(error.id + '-svg')).on("click")();
             $('#toggle_properties_button').click();
         });
@@ -751,7 +871,7 @@ function displayValidationResults(results) {
             d3.select(d3Id(warning.id)).attr('fill', fill);
         });
         tr.on('click', () => {
-            warning_propeties.push(warning.element);
+            warning_properties.push(warning.element);
             d3.select(d3Id(warning.id + '-svg')).on("click")();
             $('#toggle_properties_button').click();
         });
@@ -763,5 +883,178 @@ function displayValidationResults(results) {
  */
 function displayPricingResults(results) {
     console.info('Displaying Pricing Results');
-    $(jqId(COST_ESTIMATE_PANEL)).text(JSON.stringify(results));
+    $(jqId(COST_ESTIMATE_PANEL)).empty();
+    let summary = results.pop();
+
+    d3.select(d3Id("cost_estimate_panel")).append('p')
+        .attr('class', 'okit-cost-small-print')
+        .text("The values displayed are purely for estimation purposes only and are generated from our public pricing pages. For accurate costing you will need to consult your OCI Account Manager.");
+
+    let download_button = d3.select(d3Id('cost_estimate_panel')).append('p')
+        .append('div').append('button')
+        .attr('id', 'download_button')
+        .attr('type', 'button')
+        .text('Download BoM');
+    download_button.on("click", handleDownloadBoM);
+
+    // Hidden form is required to download the retrieved file from python
+    let hidden_form = d3.select(d3Id('cost_estimate_panel')).append('form')
+        .attr('id', 'hidden_form')
+        .attr('action', 'pricing/downloadbom')
+        .attr("target", "_blank")
+        .attr('method', 'POST');
+
+    hidden_form.append("input")
+        .attr("type", "hidden")
+        .attr("name", "hdnJson")
+        .attr("id", "hdnJson")
+
+    // d3.select(d3Id('cost_estimate_panel')).append('p').append('a')
+    //     .attr('href', 'pricing/downloadbom').text('Export BoM');
+
+
+    tabulateHorizontal("cost_estimate_panel", results,
+        [{
+            "label": "RESOURCENAME",
+            "align": "left",
+            "width": "50%"
+        },
+            {
+                "label": "PAYG",
+                "align": "right",
+                "width": "25%"
+            },
+            {
+                "label": "ANNUAL_FLEX",
+                "align": "right",
+                "width": "25%"
+            }
+        ]);
+    d3.select(d3Id("cost_estimate_panel")).append('p').text("SUMMARY").style('font-weight', 'bold');
+    tabulateVertical("cost_estimate_panel", summary,
+        [{
+            "label": "PAYG",
+            "align": "right",
+            "labelWidth": "50%",
+            "dataWidth": "50%"
+        },
+            {
+                "label": "ANNUAL_FLEX",
+                "align": "right",
+                "labelWidth": "50%",
+                "dataWidth": "50%"
+            },
+            {
+                "label": "YEARLY_PAYG",
+                "align": "right",
+                "labelWidth": "50%",
+                "dataWidth": "50%"
+            },
+            {
+                "label": "YEARLY_ANNUAL_FLEX",
+                "align": "right",
+                "labelWidth": "50%",
+                "dataWidth": "50%"
+            }
+        ]);
+}
+function tabulateVertical(element, data, columns) {
+    let table = d3.select(d3Id(element)).append('div')
+        .attr('class', 'table okit-table');
+
+    let tbody = table.append('div')
+        .attr('class', 'tbody');
+
+    for (let key in data) {
+        for (i in columns) {
+            if (columns[i].label == key) {
+                let formatter = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                });
+                row = tbody.append("div").attr('class', 'tr');
+                row.append("div")
+                    .attr('class', 'th')
+                    .style('text-align', "left")
+                    .style("width", columns[i].labelWidth)
+                    .text(titleCase(replaceAll(key, '_', ' ')));
+                row.append("div")
+                    .attr('class', 'td')
+                    .style('text-align', columns[i].align)
+                    .style("width", columns[i].dataWidth)
+                    .text(formatter.format(data[key]));
+                break;
+            }
+        }
+    }
+}
+function tabulateHorizontal(element, data, columns) {
+    let table = d3.select(d3Id(element)).append('div')
+        .attr('class', 'table okit-table');
+
+    let thead = table.append('div').attr('class', 'thead');
+    let tbody = table.append('div').attr('class', 'tbody');
+
+    // append the header row
+    thead.append('div')
+        .attr('class', 'tr')
+        .selectAll('div')
+        .data(columns).enter()
+        .append('div')
+        .attr('class', 'th')
+        .text(function (column) {
+            return titleCase(replaceAll(column.label, '_', ' '));
+        })
+        .style("text-align", function (column) {
+            return column.align;
+        })
+        .style("width", function (column) {
+            return column.width;
+        });
+
+    // create a row for each object in the data
+    let rows = tbody.selectAll('div')
+        .data(data)
+        .enter()
+        .append('div')
+        .attr('class', 'tr')
+
+    // create a cell in each row for each column
+    let cells = rows.selectAll('div')
+        .data(function (row) {
+            return columns.map(function (column) {
+                if (typeof row[column.label] == 'number') {
+                    let formatter = new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD'
+                    });
+                    return {
+                        column: column.label,
+                        value: formatter.format(row[column.label]),
+                        align: 'right'
+                    };
+                } else
+                    return {
+                        column: column.label,
+                        value: titleCase(replaceAll(row[column.label], '_', ' ')),
+                        align: 'left'
+                    };
+            });
+        })
+        .enter()
+        .append('div')
+        .attr('class', 'td')
+        .text(function (d) {
+            return d.value;
+        })
+        .style("white-space", "nowrap")
+        // .style("flex-wrap", "nowrap")
+        .style("text-align", function (d) {
+            return d.align;
+        });
+    return table;
+}
+function handleDownloadBoM(event) {
+    document.getElementById("hdnJson").value = JSON.stringify(okitJsonModel);
+    document.getElementById("hidden_form").submit();
 }

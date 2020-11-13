@@ -13,7 +13,7 @@ function d3Id(id) {
 }
 
 function safeId(id) {
-    return id.replace( /(:|\.|\[|\]|,|=|@)/g, "\\$1" );
+    return id ? id.replace( /(:|\.|\[|\]|,|=|@)/g, "\\$1" ) : id;
 }
 
 function uuidv4() {
@@ -57,7 +57,7 @@ function standardiseId(id) {
 }
 
 function getTimestamp() {
-    console.groupCollapsed('Get TimeStamp');
+    console.log('Get TimeStamp');
     let dateTimeNow = new Date();
     let year   = '' + dateTimeNow.getFullYear();
     let month  = ('00' + dateTimeNow.getMonth()).slice(-2);
@@ -73,7 +73,7 @@ function getTimestamp() {
     console.info('Second    : ' + second);
     let timestamp = year + month + day + '-' + hour + minute + second;
     console.info('Timestamp : ' + timestamp);
-    console.groupEnd();
+    console.log();
     return timestamp;
 }
 
@@ -152,4 +152,12 @@ function triggerDownload(uri, name) {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+function replaceAll(str, find, replace) {
+    return str.replace(new RegExp(escapeRegExp(find), 'g'), replace);
 }

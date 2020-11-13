@@ -1,6 +1,115 @@
 # Release Notes
 
 
+## Version 0.13.0 
+**Release Date**: 28th October 2020
+### Features
+1. Read Load Balancer Shapes from OCI / Cached OCI Values
+2. Simple Command Line generator (visualiser/okit_generator) to convert OKIT.
+3. Add MySQL Resource / Artefact.
+4. Add Cost Estimation functionality for the designed model. This is based on the Oracle public APIs.
+5. Add top-level Dockerfile and update Runtime build documentation. 
+6. Enable Instance Principal Authentication for Query/Resource Manager.
+
+### Bug Fixes
+1. Build script on Windows fail (Issue: #135)
+2. Instances were picking up Network Security Groups assigned to Autonomous Database during Terraform generation.
+3. Decoding Instance Metadata cloud-init data fails to decode .(Issue: #55)
+
+## Version 0.12.0 
+**Release Date**: 7th October 2020
+### Features
+1. Enhanced feedback for multi region query.
+2. Cache Regions
+3. Cache Compartments for specific Profile.
+4. Add functionality for Customer Premise Equipment.
+5. IPSec Connections added.
+6. Remote peering functionality added but current the user will still need to add the peering id.
+7. Dynamic Routing Gateway simplified and connections created from the new IPSec Connection & Remote Peering Connection.
+8. Database System/Autonomous name displayed on the canvas (ENH REQ: Issue: #120).
+9. Experimental Import from Terraform JSON Format file.
+10. Export to Resource Manage local GitHub directory.
+
+### Bug Fixes
+1. Fix Service Gateway only offers all services when drawn but then provisions Object Storage #107
+2. Fix Service Gateway related route rules do not allow setting a Destination Service #109
+3. Add clean functionality to the json object to remove null / undefined to resolve null element issue in Autonomous Databases.
+4. Update Virtual Cloud Network and Subnet CIDR generation to check existing CIDRs. This resolves the duplicate CIDR issue.
+
+
+## Version 0.11.0 
+**Release Date**: 16th September 2020
+### Features
+1. Modify Multiple Select Options to Checkbox Group
+2. Add Option to Query Dialog to allow the user to specify if the query will drill down into Sub-Compartments.
+3. Modify start functionality to allow the user to specify a local directory where the user templates will be saved.
+4. Add display/edit of the Model Title and Description to the web interface.
+
+### Bug Fixes
+1. Database System CPU Count causing error when generating Terraform (Issue: #98)
+2. Network Security Groups, for a VCN, were not deleted when the VCN is deleted.
+3. DRG not being displayed if it was not attached to a VCN following a query.
+
+
+## Version 0.10.2 
+**Release Date**: 27th August 2020
+### Bug Fixes
+1. Resolve issue where deleting an artefact would cause an addition OKE cluster to be created if one exists on the canvas. In addition deleting OKE caused it to be removed from the model but not the view. 
+
+
+## Version 0.10.1 
+**Release Date**: 27th August 2020
+### Bug Fixes
+1. Querying occasionally hit a condition where the SVG rectangle does not exist before attempting to get the bounding client information (Issue: #86) 
+
+
+## Version 0.10.0 
+**Release Date**: 26th August 2020
+### Features
+1. Modify the Hamburger menu to replace the mouseover events for menu display to mouse click events.
+2. Add OKE Cluster functionality. Corrently works in a similar way to the advanced console create (OKIT-13).
+3. Add count field to instance to allow generation of X duplicate version of an instance. Save time and space creating duplicates.
+4. Add ability to specify Subnet for Autonomous Database (Issue: #76 & Issue: #81).
+5. Add OKE example fragment.
+
+### Bug Fixes
+1. Add test for existing of image_id for edge cases when it is missing from query (Issue: #79).
+2. Querying of Dynamic Routing Gateway occasionally cause console error (Issue: #80).
+3. Internet Gateways could only be created on the first subnet in a vcn (Issue: #71).
+
+
+## Version 0.9.2 
+**Release Date**: 7th August 2020
+### Bug Fixes
+1. Unable to drop gateways on second or subsequent VCNs (Issue #73).
+
+
+## Version 0.9.1 
+**Release Date**: 6th August 2020
+### Bug Fixes
+1. Config file warning being displayed when only [DEFAULT] section defined (OKIT-110).
+
+
+## Version 0.9.0 
+**Release Date**: 5th August 2020
+### Features
+1. Split Designer View functionality from OKIT Model (OKIT-89).
+2. Update Json associated with the Fragments to conform to new structure and remove non Reference Architecture templates because these are fragments. (OKIT-101).
+3. Check oci config file to identify if the key file exists in the container and if not display error icon with associated click / alert message (OKIT-48 / OKIT-96).
+4. Add preferences option (Hide Attached Artefacts) to indicate if Route Tables / Security List should be displayed as part of the Virtual Cloud Networks as well as an attachment.
+5. Hide Service CIDR when Service Gateway in Route Rule is selected.
+
+### Bug Fixes
+1. Resolve issue with the "description" for Network Security Groups which was being incorrectly rendered in the generated Terraform.
+2. Attached Route Tables / Security List property edits were lost. (OKIT-70).
+3. Resolve issue with the "compartment_id" for Compartment which was being incorrectly rendered in the generated Terraform.
+4. During query AD specific Subnets return Availability Domain as string not integer value, this is now converted (OKIT-105).
+5. Deleting Defined Tags did not remove them from the model (OKIT-106).
+6. Instance OS & Version information not retrieved during Query (OKIT-108).
+7. DRG Ansible template contains '=' not ':' (GitHub Issue #61).
+8. Quotes added to security Ingress / Egress rules (GitHub Issue #65).
+
+
 ## Version 0.8.0 
 **Release Date**: 15th July 2020
 ### Features

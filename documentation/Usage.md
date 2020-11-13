@@ -56,6 +56,7 @@ cd oci-designer-toolkit
 docker run -d --rm -p 443:443 -p 80:80 \
            --name okit \
            --hostname okit \
+           --volume ~/okit/user/templates:/okit/templates \
            okit
 ```
 The __<OKIT_ROOT_DIR>/containers/scripts__ contains helper scripts for Linux/Mac and Windows PowerShell.
@@ -108,7 +109,7 @@ The hamburger menu in the top left will display a slide out menu with all availa
     - <img src="../okitweb/static/okit/palette/gateways/Service_Gateway.svg?svg=true" width="30" height="30"/>          Service Gateway
     - <img src="../okitweb/static/okit/palette/gateways/Local_Peering_Gateway.svg?svg=true" width="30" height="30"/>    Local Peering Gateway
 - Networking
-    - <img src="../okitweb/static/okit/palette/networking/Fast_Connect.svg?raw=true" width="30" height="30"/>           Fast Connect
+    - <img src="../okitweb/static/okit/palette/hidden/Fast_Connect.svg?raw=true" width="30" height="30"/>           Fast Connect
     - <img src="../okitweb/static/okit/palette/networking/Load_Balancer.svg?raw=true" width="30" height="30"/>          Load Balancer
     - <img src="../okitweb/static/okit/palette/networking/Network_Security_Group.svg?raw=true" width="30" height="30"/> Network Security Group
     - <img src="../okitweb/static/okit/palette/networking/Route_Table.svg?raw=true" width="30" height="30"/>            Route Table

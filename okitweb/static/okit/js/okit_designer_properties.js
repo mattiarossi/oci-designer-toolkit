@@ -41,11 +41,11 @@ function setDescendantProp(obj, desc, value) {
     return obj[arr[0]] = value;
 }
 
-let error_propeties = [];
-let warning_propeties = [];
+let error_properties = [];
+let warning_properties = [];
 
 function loadPropertiesSheet(json_element) {
-    console.groupCollapsed('Loading Properties');
+    console.log('Loading Properties');
     $.each(json_element, function(key, val) {
         console.info('Key : ' + key + ' = ' + val);
         if (val == null) {
@@ -71,21 +71,48 @@ function loadPropertiesSheet(json_element) {
                     $(jqId(json_element['id'] + '-display-name')).text(json_element[key]);
                 }
             });
+        } else if ($(jqId(key)).is('input[type="number"]')) {                     // Number
+            console.info(key + ' is input:number.');
+            $(jqId(key)).val(val);
+            $(jqId(key)).on('input', () => {
+                json_element[key] = $(jqId(key)).val();
+            });
         } else if ($(jqId(key)).is("input:checkbox")) {                // CheckBox
             console.info(key + ' is input:checkbox.');
             $(jqId(key)).on('input', () => {json_element[key] = $(jqId(key)).is(':checked'); redrawSVGCanvas();});
             $(jqId(key)).attr('checked', val);
+        } else if ($(jqId(key)).is('div[class="okit-multiple-select"]')) { // Multiple Select
+            console.info(key + ' is multiple select with value ' + val);
+            $(jqId(key)).find("input:checkbox").each(function() {
+                $(this).on('input', () => {
+                    json_element[key] = [];
+                    $(jqId(key)).find("input:checkbox").each(function() {
+                        if ($(this).prop('checked')) {json_element[key].push($(this).val());}
+                    });
+                    redrawSVGCanvas();
+                });
+                if (val.includes($(this).val())) {$(this).prop("checked", true);}
+            });
         } else if ($(jqId(key)).is("select")) {                        // Select
             console.info(key + ' is select with value ' + val);
+            $(jqId(key)).on('change', () => {json_element[key] = $(jqId(key)).val() ? $(jqId(key)).val() : ''; $(jqId(key)).removeClass('okit-warning'); redrawSVGCanvas();});
             $(jqId(key)).val(val);
-            $(jqId(key)).on('change', () => {json_element[key] = $(jqId(key)).val(); redrawSVGCanvas();});
+            if (!$(jqId(key)).val() && !Array.isArray(val) && String(val).trim() !== '') {
+                console.warn(`Value ${val} not in select list ${key}`);
+                $(jqId(key)).addClass('okit-warning');
+                $(jqId(key)).change();
+            } else if (!val || (!Array.isArray(val) && String(val).trim() === '')) {
+                $(jqId(key)).val($(jqId(key) + ' option:first').val());
+                json_element[key] = $(jqId(key)).val() ? $(jqId(key)).val() : '';
+                console.info(`Value unspecified setting ${key} to first entry ${json_element[key]}`);
+            }
         } else if ($(jqId(key)).is("label")) {                         // Label
             console.info(key + ' is label.');
             if (key.endsWith('_id')) {
                 // Get Artifact Associated With Id
-                let artifact_type = key.substr(0, (key.length - 3));
-                console.info('Label : Artifact Type ' + titleCase(artifact_type) + ' - ' + key);
-                $(jqId(key)).html(okitJson['get' + titleCase(artifact_type)](val).display_name);
+                let artefact_type = key.substr(0, (key.length - 3));
+                console.info('Label : Artifact Type ' + titleCase(artefact_type) + ' - ' + key);
+                $(jqId(key)).html(okitJsonView['get' + titleCase(artefact_type)](val).display_name);
             } else {
                 $(jqId(key)).html(val);
             }
@@ -140,7 +167,8 @@ function loadPropertiesSheet(json_element) {
                     .attr('type', 'button')
                     .text('X');
                 button.on('click', function () {
-                    delete json_element.defined_tags[key];
+                    delete json_element.defined_tags[namespace][key];
+                    if (Object.keys(json_element.defined_tags[namespace]).length === 0) {delete json_element.defined_tags[namespace];}
                     loadPropertiesSheet(json_element);
                     d3.event.stopPropagation();
                 });
@@ -156,16 +184,18 @@ function loadPropertiesSheet(json_element) {
         d3.select(d3Id("optional_properties")).attr("open", "open");
     }
     // Check for Errors & Warnings
-    for (let property_name of error_propeties) {
+    for (let property_name of error_properties) {
         $(jqId(property_name)).addClass('okit-error');
         $(jqId(property_name)).focus();
     }
-    error_propeties = [];
-    for (let property_name of warning_propeties) {
+    error_properties = [];
+    for (let property_name of warning_properties) {
         $(jqId(property_name)).addClass('okit-warning');
     }
-    warning_propeties = [];
-    console.groupEnd();
+    warning_properties = [];
+    // Set up Multi Select boxes to toggle select
+    //$("select[multiple] option").mousedown(function() {let $self = $(this); $self.prop('selected', !$self.prop('selected')); return false;});
+    console.log();
 }
 
 function addFreeformTag(json_element) {

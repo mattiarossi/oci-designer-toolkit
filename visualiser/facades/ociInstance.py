@@ -17,7 +17,10 @@ import base64
 import oci
 
 from common.okitLogging import getLogger
+from common.okitCommon import logJson
+from common.okitCommon import userDataDecode
 from facades.ociBootVolumeAttachment import OCIBootVolumeAttachments
+from facades.ociImage import OCIImages
 from facades.ociConnection import OCIComputeConnection, OCIVirtualNetworkConnection
 from facades.ociVnicAttachement import OCIVnicAttachments
 from facades.ociVolumeAttachment import OCIVolumeAttachments
@@ -73,7 +76,7 @@ class OCIInstances(OCIComputeConnection):
         self.instances_obj = []
         super(OCIInstances, self).__init__(config=config, configfile=configfile, profile=profile)
 
-    def list(self, compartment_id=None, filter=None):
+    def list(self, compartment_id=None, filter=None, exclude_oke=True):
         if compartment_id is None:
             compartment_id = self.compartment_id
 
@@ -88,11 +91,9 @@ class OCIInstances(OCIComputeConnection):
 
         # Convert to Json object
         instances_json = self.toJson(instances)
-        logger.debug(str(instances_json))
- 
+
         # Filter results
         self.instances_json = self.filterJsonObjectList(instances_json, filter)
-        logger.debug(str(self.instances_json))
 
 
         # Get Volume Attachments as a single call and loop through them to see if they are associated with the instance.
@@ -101,10 +102,25 @@ class OCIInstances(OCIComputeConnection):
         # Get VNic Attachments as a single call and loop through them to see if they are associated with the instance.
         vnic_attachments = OCIVnicAttachments(config=self.config, configfile=self.configfile, profile=self.profile, compartment_id=compartment_id).list()
 
+        # Filter out OKE Created Instances
+        logger.info('Filtering out OKE Instances from list ({0!s:s}).'.format(len(self.instances_json)))
+        if exclude_oke:
+            self.instances_json = [i for i in self.instances_json if 'oke-cluster-id' not in i['metadata']]
+        logger.info('Filtered OKE Instances from list ({0!s:s}).'.format(len(self.instances_json)))
+
         for instance in self.instances_json:
+            # Get OS Details
+            if ('source_details' in instance and 'image_id' in instance['source_details']):
+                image = OCIImages(config=self.config, configfile=self.configfile, profile=self.profile, compartment_id=compartment_id).get(instance['source_details']['image_id'])
+                instance['source_details']['os'] = image['operating_system']
+                instance['source_details']['version'] = image['operating_system_version']
+            else:
+                instance['source_details']['os'] = ''
+                instance['source_details']['version'] = ''
             # Decode Cloud Init Yaml
             if 'metadata' in instance and 'user_data' in instance['metadata']:
-                instance['metadata']['user_data'] = base64.b64decode(instance['metadata']['user_data']).decode('utf-8')
+                # instance['metadata']['user_data'] = base64.b64decode(instance['metadata']['user_data']).decode('utf-8')
+                instance['metadata']['user_data'] = userDataDecode(instance['metadata']['user_data'])
             # Add Attached Block Storage Volumes
             instance['block_storage_volume_ids'] = [va['volume_id'] for va in volume_attachments if va['instance_id'] == instance['id']]
             # Add Vnic Attachments
@@ -120,6 +136,8 @@ class OCIInstances(OCIComputeConnection):
             # Build object list
             self.instances_obj.append(OCIInstance(self.config, self.configfile, self.profile, instance))
 
+        logJson(self.instances_json)
+        #logger.info(str(self.instances_json))
         return self.instances_json
 
 class OCIInstance(object):

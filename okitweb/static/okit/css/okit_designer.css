@@ -175,6 +175,29 @@
     color: black;
 }
 
+.okit-tab-progress {
+    animation: animate-icing 2.2s linear infinite;
+    background: linear-gradient(#eee, #eee) no-repeat;
+    position: relative;
+}
+
+.okit-tab-progress:before {
+    background: linear-gradient(90deg, #a3f022, #3e9fff);
+    content: "";
+    position: absolute;
+    height: 1.1em;
+    width: 87%;
+    z-index: -1
+}
+
+.okit-tab-progress:after {
+    background-color: #fff;
+    content: "";
+    position: relative;
+    height: 1.1em;
+    width: 87%;
+}
+
 .okit-svg-canvas {
     display: block;
     padding: 0;
@@ -182,6 +205,31 @@
     height: 100%;
     width: 100%;
     overflow: scroll;
+}
+
+.okit-canvas-details {
+    display: block;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.okit-canvas-details > div > div > label {
+    font-family: Helvetica Neue,Helvetica,Arial,sans-serif;
+    font-weight: bold;
+    font-size: small;
+    margin-left: 1em;
+}
+
+.okit-canvas-details > div > div > input {
+    font-family: Helvetica Neue,Helvetica,Arial,sans-serif;
+    font-weight: normal;
+    margin-left: 1em;
+}
+
+.okit-canvas-details > div {
+    overflow: hidden;
 }
 
 /*
@@ -207,7 +255,7 @@
 }
 
 .okit-property-sheet .okit-property-value {
-
+    font-weight: normal;
 }
 
 .okit-property-sheet .okit-property-label {
@@ -293,4 +341,40 @@
 rect.highlight {
     stroke-width: 3;
     stroke-dasharray: none;
+}
+
+rect.highlight-vnic {
+    fill: #00cc00;
+}
+
+rect.highlight-association {
+    fill: #336600;
+}
+
+/*
+** Cost Estimate and Value Proposition
+ */
+.okit-value-proposition {
+    opacity: 1;
+    height: 100%;
+    width: 100%;
+    font-family: Consolas, monaco, monospace;
+    overflow-x: scroll;
+    overflow-y: scroll;
+}
+
+.okit-cost-estimate {
+    opacity: 1;
+    height: 100%;
+    width: 100%;
+    font-family: Consolas, monaco, monospace;
+    overflow-x: scroll;
+    overflow-y: scroll;
+}
+
+.okit-cost-small-print {
+    font-size: small;
+    font-weight: bold;
+    font-style: italic;
+    font-family: Arial;
 }
